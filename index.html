@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Data Visualization</title>
+	<link rel="stylesheet" href="assets/css/style.css">
+	<script type="text/javascript" src="assets/js/paper-full.js"></script>
+	<script type="text/paperscript" canvas="canvas">
+
+		var colors = ["#147E9E", "#1F918F", "#20A09E", "#219688", "#25708E"];
+
+		var ballPositions = [[255, 129], [610, 73], [486, 363],
+			[117, 459], [484, 726], [843, 306], [789, 615], [1049, 82],
+			[1292, 428], [1117, 733], [1352, 86], [92, 798]];
+
+
+
+		var circleLayer = new paper.Layer();
+		circleLayer.activate();
+
+		var circlePaths = [];
+		var radius = 50;
+		for (var i = 0, l = ballPositions.length; i < l; i++) {
+			var circlePath = new Path.Circle({
+				center: ballPositions[i],
+				radius: 50
+			});
+			circlePath.fillColor = colors[i%5];
+			circlePaths.push(circlePath);
+		}
+
+		// draw connectiong web
+		var webLayer = new paper.Layer();
+		webLayer.activate();
+		var web = [];
+		for (var i = 0; i < circlePaths.length; i++){
+			for (var j = 0; j < circlePaths.length; j++) {
+				if (isClose(circlePaths[i], circlePaths[j])) {
+					var from = new Point(circlePaths[i].position, circlePaths[i].position);
+					var to = new Point(circlePaths[j].position, circlePaths[i].position);
+					var path = new Path.Line(from, to);
+					web.push(path);
+					path.strokeColor = 'black'; // ideas: average the two colors, gradient from one to the other
+				}
+			}
+		}
+
+		circleLayer.moveAbove(webLayer);
+
+		function isClose(circleA, circleB) {
+			var xProximity = Math.abs(circleB.position.x - circleA.position.x);
+			var yProximity = Math.abs(circleB.position.y - circleA.position.y);
+			var proximity = 450;
+			return (xProximity < proximity && yProximity < proximity);
+		}
+
+		function pointIsClose(point, circle) {
+			var xProximity = Math.abs(circle.position.x - point.x);
+			var yProximity = Math.abs(circle.position.y - point.y);
+			var proximity = 200;
+			return (xProximity < proximity && yProximity < proximity);
+		}
+		
+		function findClosestNode(point, listOfNodes) {
+			var leastDistance = getDistance(point, listOfNodes[0].center);
+			var result = null;
+			for (var i = 0; i < listOfNodes.length; i++) {
+				var distance = getDistance(point, listOfNodes[i].center);
+				if (distance < leastDistance) {
+					leastDistance = distance;
+					result = listOfNodes[i];
+				}
+			}
+			return result;
+		}
+
+		function onMouseMove(event) {
+			for (var i = 0; i < circlePaths.length; i++) {
+				if (pointIsClose(event.point, circlePaths[i])) {
+					// enlarge
+					var radius = circlePaths[i].bounds.width / 2;
+					circlePaths[i].scale(100 / radius);
+				}
+				else {
+					// set to normal
+					var radius = circlePaths[i].bounds.width / 2;
+					circlePaths[i].scale(50 / radius);
+				}
+			}
+
+			// use findClosestNode to scale only the closest node
+			// var closestNode = findClosestNode(event.point, circlePaths);
+			// if (getDistance(closestNode.center, event.point) < 200) {
+			// 	// enlarge
+			// 	var radius = circlePaths[i].bounds.width / 2;
+			// 	closestNode.scale(100 / radius);
+			// }
+			// else {
+			// 	// set to normal
+			// 	var radius = circlePaths[i].bounds.width / 2;
+			// 	closestNode.scale(50 / radius);
+			// }
+		}
+
+	</script>
+</head>
+<body>
+	<canvas id="canvas" resize></canvas>
+</body>
+</html>
