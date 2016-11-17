@@ -5,25 +5,23 @@
 	<title>Data Visualization</title>
 	<link rel="stylesheet" href="assets/css/style.css">
 	<script type="text/javascript" src="assets/js/paper-full.js"></script>
+	<script type="text/javascript" src="assets/js/constants.js"></script>
 	<script type="text/paperscript" canvas="canvas">
 
 		var colors = ["#147E9E", "#1F918F", "#20A09E", "#219688", "#25708E"];
-
 		var ballPositions = [[255, 129], [610, 73], [486, 363],
 			[117, 459], [484, 726], [843, 306], [789, 615], [1049, 82],
 			[1292, 428], [1117, 733], [1352, 86], [92, 798]];
-
-
+		var DEFAULT_RADIUS = consts.nodes.DEFAULT_RADIUS;
 
 		var circleLayer = new paper.Layer();
 		circleLayer.activate();
 
 		var circlePaths = [];
-		var radius = 50;
 		for (var i = 0, l = ballPositions.length; i < l; i++) {
 			var circlePath = new Path.Circle({
 				center: ballPositions[i],
-				radius: 50
+				radius: DEFAULT_RADIUS
 			});
 			circlePath.fillColor = colors[i%5];
 			circlePaths.push(circlePath);
@@ -61,11 +59,15 @@
 			return (xProximity < proximity && yProximity < proximity);
 		}
 		
+		// Parameters
+		// Point: any point object, listOfNodes: array of circle objects
 		function findClosestNode(point, listOfNodes) {
-			var leastDistance = getDistance(point, listOfNodes[0].center);
+			var leastDistance = 99999;
+
 			var result = null;
 			for (var i = 0; i < listOfNodes.length; i++) {
-				var distance = getDistance(point, listOfNodes[i].center);
+				var distance = point.getDistance(listOfNodes[i].position);
+
 				if (distance < leastDistance) {
 					leastDistance = distance;
 					result = listOfNodes[i];
@@ -73,33 +75,45 @@
 			}
 			return result;
 		}
-
+		var closestNode = null;
 		function onMouseMove(event) {
+
 			for (var i = 0; i < circlePaths.length; i++) {
-				if (pointIsClose(event.point, circlePaths[i])) {
-					// enlarge
-					var radius = circlePaths[i].bounds.width / 2;
-					circlePaths[i].scale(100 / radius);
-				}
-				else {
-					// set to normal
-					var radius = circlePaths[i].bounds.width / 2;
-					circlePaths[i].scale(50 / radius);
-				}
+				circlePaths[i].strokeColor = 'black';
+				circlePaths[i].strokeWidth = 0;
+				var radius = circlePaths[i].bounds.width / 2;
+				circlePaths[i].scale(DEFAULT_RADIUS / radius)
 			}
+			var closest = findClosestNode(event.point, circlePaths);
+			closest.strokeColor = 'red';
+			closest.strokeWidth = 5;
 
 			// use findClosestNode to scale only the closest node
-			// var closestNode = findClosestNode(event.point, circlePaths);
-			// if (getDistance(closestNode.center, event.point) < 200) {
-			// 	// enlarge
-			// 	var radius = circlePaths[i].bounds.width / 2;
-			// 	closestNode.scale(100 / radius);
-			// }
-			// else {
-			// 	// set to normal
-			// 	var radius = circlePaths[i].bounds.width / 2;
-			// 	closestNode.scale(50 / radius);
-			// }
+			closestNode = findClosestNode(event.point, circlePaths);
+			var distance = event.point.getDistance(closestNode.position);
+
+			if (distance < 200) {
+				// enlarge
+				//var radius = closestNode.bounds.width / 2;
+				//closestNode.scale(100 / radius);
+			}
+			else {
+				// set to normal
+				//var radius = closestNode.bounds.width / 2;
+				//closestNode.scale(DEFAULT_RADIUS / radius);
+			}
+		}
+
+		function onFrame(event) {
+			for (var i = 0; i < circlePaths.length; i++) {
+				if (closestNode != null) { // closestNode is null before mouse enters canvas
+					var exponent = 0.008;
+					if (closestNode.bounds.width < consts.nodes.EXPANDED_RADIUS) {
+						closestNode.scale(1.001 + exponent);
+						exponent += exponent*2;
+					}
+				}
+			}
 		}
 
 	</script>
