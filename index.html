@@ -21,7 +21,8 @@
 		for (var i = 0, l = ballPositions.length; i < l; i++) {
 			var circlePath = new Path.Circle({
 				center: ballPositions[i],
-				radius: DEFAULT_RADIUS
+				radius: DEFAULT_RADIUS,
+				startDelay: randomInt(0, 500)
 			});
 			circlePath.fillColor = colors[i%5];
 			circlePaths.push(circlePath);
@@ -31,18 +32,6 @@
 		var webLayer = new paper.Layer();
 		webLayer.activate();
 		var web = [];
-		for (var i = 0; i < circlePaths.length; i++){
-			for (var j = 0; j < circlePaths.length; j++) {
-				if (isClose(circlePaths[i], circlePaths[j])) {
-					var from = new Point(circlePaths[i].position, circlePaths[i].position);
-					var to = new Point(circlePaths[j].position, circlePaths[i].position);
-					var path = new Path.Line(from, to);
-					web.push(path);
-					path.strokeColor = 'black'; // ideas: average the two colors, gradient from one to the other
-				}
-			}
-		}
-
 		circleLayer.moveAbove(webLayer);
 
 		function isClose(circleA, circleB) {
@@ -84,9 +73,6 @@
 				var radius = circlePaths[i].bounds.width / 2;
 				circlePaths[i].scale(DEFAULT_RADIUS / radius)
 			}
-			var closest = findClosestNode(event.point, circlePaths);
-			closest.strokeColor = 'red';
-			closest.strokeWidth = 5;
 
 			// use findClosestNode to scale only the closest node
 			closestNode = findClosestNode(event.point, circlePaths);
@@ -104,16 +90,63 @@
 			}
 		}
 
+		// Take in degrees, returns radian equivalent value
+		function toRad(degrees) {
+			return degrees*(Math.PI/180);
+		}
+		// Returns a random integer between min (included) and max (excluded)
+		// Using Math.round() will give you a non-uniform distribution!
+		function randomInt(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min)) + min;
+		}
+		function randomSign() {
+			if (randomInt(0, 2) == 0) return 1;
+			else return -1;
+		}
+		
+		var movingLine = new Path.Line({
+			from: [20, 20],
+			to: [80, 80],
+			strokeColor: 'black'
+		});
 		function onFrame(event) {
+
+			if (event.count == 1) console.log(movingLine.position);
+
+
 			for (var i = 0; i < circlePaths.length; i++) {
+				
+				// // draw connecting web
+				// for (var j = 0; j < circlePaths.length; j++) {
+				// 	if (isClose(circlePaths[i], circlePaths[j])) {
+				// 		var from = new Point(circlePaths[i].position, circlePaths[i].position);
+				// 		var to = new Point(circlePaths[j].position, circlePaths[i].position);
+				// 		var path = new Path.Line(from, to);
+				// 		web.push(path);
+				// 		path.strokeColor = 'black'; // ideas: average the two colors, gradient from one to the other
+				// 		web.pop();
+				// 	}
+				// }
+
+
 				if (closestNode != null) { // closestNode is null before mouse enters canvas
 					var exponent = 0.008;
 					if (closestNode.bounds.width < consts.nodes.EXPANDED_RADIUS) {
-						closestNode.scale(1.001 + exponent);
-						exponent += exponent*2;
+						//closestNode.scale(1.001 + exponent);
+						//exponent += exponent*2;
 					}
 				}
+				if (event.count > circlePaths[i].startDelay){
+					circlePaths[i].position.x += Math.cos(toRad((event.count-circlePaths[i].startDelay) % 360));
+					circlePaths[i].position.y += Math.sin(toRad((event.count-circlePaths[i].startDelay) % 360));
+				}
 			}
+		}
+
+		for (var each in consts.strengths) {
+			//console.log(consts.strengths[each].description);
 		}
 
 	</script>
